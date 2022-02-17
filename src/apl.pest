@@ -1,0 +1,12 @@
+WHITESPACE = _{ " " }
+
+Nat = { '0'..'9' }
+
+Phase = { Reduce | Sum }
+
+Sum = { SomeVect ~ "+" ~ Phase }
+Reduce = { "+/" ~ SomeVect }
+
+SomeVect = { Nat+ }
+
+Main = { Phase? }
