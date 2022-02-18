@@ -1,0 +1,142 @@
+<html>
+<body>
+
+<style>
+
+    body {
+        padding: 1em;
+        margin: auto;
+        max-width: 40rem;
+        font-family: monospace;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #ide {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1em;
+    }
+
+    .header {
+        text-transform: uppercase;
+        font-weight: bold;
+    }
+
+    #i {
+        border: 1px dotted;
+        min-height: 3em;
+    }
+
+    #stdout {
+        background-color: black;
+        color: white;
+        max-height: 50vh;
+        overflow-y: scroll;
+    }
+
+    #i:focus {
+        outline: none;
+    }
+
+    form {
+        display: flex;
+        flex-direction: column;
+    }
+
+</style>
+
+<header>
+
+    <div>
+        <div>
+            <a href="https://aplcart.info/">aplcart</a>
+            <a href="https://www.dyalog.com/uploads/documents/MasteringDyalogAPL.pdf">mastering</a>
+            <a href="https://github.com/Co-dfns/Co-dfns/blob/master/docs/PERFORMANCE.md">performance</a>
+        </div>
+
+        <div>
+            <span class=header>Supported operands</span></br>
+            <span>Monadic: ⍒ ⍳ +/</span></br>
+            <span>Dyadic: </span>
+        </div>
+    </div>
+
+</header>
+
+<div id="ide">
+
+    <div contenteditable="true" id="i" autocorrect="off" spellcheck="false"></div>
+    <div id="stdout"></div>
+
+</div>
+
+<form>
+
+    <input id="apl" disabled>
+    <input id="idris" disabled>
+
+</form>
+
+<script>
+
+print = data => {
+    let container = document.createElement("p")
+    let msg = document.createTextNode(data)
+    container.appendChild(msg)
+    document.getElementById('stdout').prepend(container)
+}
+
+const targetNode = document.getElementById('i');
+
+targetNode.addEventListener('beforeinput', e => {
+    if (e.inputType != "insertParagraph") {
+        return
+    }
+    observer.observe(targetNode, {
+        attributes: false,
+        childList: true,
+        subtree: false
+    })
+})
+
+const observer = new MutationObserver((mutations, observer) => {
+    mutations.filter((mutation) => {
+        let newLineEntry = mutation.target == targetNode
+        let emptyLine = mutation.previousSibling === null
+        return newLineEntry || !emptyLine
+    }).filter((mutation) =>
+        mutation.previousSibling.textContent.trim().length > 0
+    ).forEach((mutation, _) => {
+        let formData = new FormData();
+        formData.append("input", mutation.previousSibling.textContent.trim());
+        fetch(new Request('/', {
+            method: 'POST',
+            body: formData
+        })).then(res => res.text().then(text => {
+            console.log(text);
+
+            let lines = text.split("\n");
+            let interpretation = lines[0];
+            let shape = lines[1];
+            let input = lines[2];
+            print("interpretation: " + interpretation);
+            print("resulting shape: " + shape);
+
+            document.querySelector("#apl").value = input;
+            document.querySelector("#idris").value = interpretation;
+        }))
+    })
+    observer.disconnect()
+});
+
+</script>
+
+</body>
+</html>
