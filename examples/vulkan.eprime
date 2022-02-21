@@ -1,0 +1,25 @@
+language ESSENCE' 1.0
+
+given queues: int
+given cpu_cores: int
+given input_size: int
+
+letting throughput = input_size / cpu_cores
+
+find schedule: matrix indexed by [int(1..queues)] of int(
+    throughput..input_size
+)
+find upper_bound: int(0..input_size)
+
+letting schedule_iter be domain int(1..4)
+
+maximising upper_bound
+
+
+
+such that
+
+(sum s : schedule_iter . schedule[s]) = input_size,
+
+exists s : schedule_iter .
+    schedule[s] = upper_bound

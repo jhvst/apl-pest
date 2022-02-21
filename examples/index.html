@@ -77,12 +77,14 @@
 
 </div>
 
-<form>
+<button id="vk">Vulkan</button>
+<textarea id="vk-info"></textarea>
 
-    <input id="apl" disabled>
-    <input id="idris" disabled>
-
-</form>
+<div id="model">
+    <button id="smt">SMT</button>
+    <textarea id="smt-model"></textarea>
+    <textarea id="smt-param"></textarea>
+</div>
 
 <script>
 
@@ -129,12 +131,35 @@ const observer = new MutationObserver((mutations, observer) => {
             print("interpretation: " + interpretation);
             print("resulting shape: " + shape);
 
-            document.querySelector("#apl").value = input;
-            document.querySelector("#idris").value = interpretation;
         }))
     })
     observer.disconnect()
 });
+
+document.getElementById('vk').onclick = (e) => {
+    fetch(new Request('/vk', {
+        method: 'GET',
+    })).then(res => res.text().then(text => {
+        document.querySelector("#vk-info").value = text
+        let lines = text.split("\n");
+        let cores = lines[0];
+        let queues = lines[4];
+
+        document.querySelector("#smt-param").value = `language ESSENCE' 1.0
+
+letting ${cores}
+letting ${queues}
+letting {2}`
+    }))
+}
+
+document.getElementById('smt').onclick = (e) => {
+    fetch(new Request('/smt', {
+        method: 'GET',
+    })).then(res => res.text().then(text => {
+        document.querySelector("#smt-model").value = text
+    }))
+}
 
 </script>
 

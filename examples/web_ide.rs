@@ -1,7 +1,22 @@
-use std::{process::Command, str::from_utf8};
+use std::{process::Command, str::from_utf8, io::Read};
 
 use salvo::{prelude::*, extra::serve::StaticFile};
 use apl_pest::parse;
+use rivi_loader::DebugOption;
+
+#[fn_handler]
+async fn caps(req: &mut Request, res: &mut Response) {
+    let vk = rivi_loader::new(DebugOption::None).unwrap();
+    res.render_plain_text(&format!("{}", vk));
+}
+
+#[fn_handler]
+async fn savilerow(req: &mut Request, res: &mut Response) {
+    let mut cursor = std::io::Cursor::new(&include_bytes!("./vulkan.eprime")[..]);
+    let mut model = String::new();
+    cursor.read_to_string(&mut model).unwrap();
+    res.render_plain_text(&model);
+}
 
 #[fn_handler]
 async fn hello_world(req: &mut Request, res: &mut Response) {
@@ -10,7 +25,7 @@ async fn hello_world(req: &mut Request, res: &mut Response) {
     let idris_fmt = parse(input).unwrap();
 
     let idris = Command::new("idris")
-        .arg(format!("{}/src/Shaped.idr", env!("CARGO_MANIFEST_DIR")))
+        .arg(format!("{}/examples/Shaped.idr", env!("CARGO_MANIFEST_DIR")))
         .arg("-e")
         .arg(&idris_fmt)
         .output()
@@ -29,6 +44,12 @@ async fn hello_world(req: &mut Request, res: &mut Response) {
 async fn main() {
     let router = Router::new()
         .get(StaticFile::new("examples/index.html"))
-        .post(hello_world);
+        .post(hello_world)
+    .push(Router::with_path("vk")
+        .get(caps)
+    )
+    .push(Router::with_path("smt")
+        .get(savilerow)
+    );
     Server::new(TcpListener::bind("127.0.0.1:7878")).serve(router).await;
 }
