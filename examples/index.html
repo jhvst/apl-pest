@@ -115,50 +115,48 @@ const observer = new MutationObserver((mutations, observer) => {
         return newLineEntry || !emptyLine
     }).filter((mutation) =>
         mutation.previousSibling.textContent.trim().length > 0
-    ).forEach((mutation, _) => {
+    ).forEach(async (mutation, _) => {
         let formData = new FormData();
         formData.append("input", mutation.previousSibling.textContent.trim());
-        fetch(new Request('/', {
+        const res = await fetch(new Request('/', {
             method: 'POST',
             body: formData
-        })).then(res => res.text().then(text => {
-            console.log(text);
-
-            let lines = text.split("\n");
-            let interpretation = lines[0];
-            let shape = lines[1];
-            let input = lines[2];
-            print("interpretation: " + interpretation);
-            print("resulting shape: " + shape);
-
         }))
+        const text = await res.text()
+        console.log(text);
+
+        let lines = text.split("\n");
+        let interpretation = lines[0];
+        let shape = lines[1];
+        let input = lines[2];
+        print("interpretation: " + interpretation);
+        print("resulting shape: " + shape);
+
     })
     observer.disconnect()
 });
 
-document.getElementById('vk').onclick = (e) => {
-    fetch(new Request('/vk', {
+document.getElementById('vk').onclick = async e => {
+    const res = await fetch(new Request('/vk', {
         method: 'GET',
-    })).then(res => res.text().then(text => {
-        document.querySelector("#vk-info").value = text
-        let lines = text.split("\n");
-        let cores = lines[0];
-        let queues = lines[4];
+    }));
+    const text = await res.text();
+    document.querySelector("#vk-info").value = text;
+    let lines = text.split("\n");
+    let cores = lines[0];
+    let queues = lines[4];
 
-        document.querySelector("#smt-param").value = `language ESSENCE' 1.0
-
+    document.querySelector("#smt-param").value = `
 letting ${cores}
 letting ${queues}
 letting {2}`
-    }))
 }
 
-document.getElementById('smt').onclick = (e) => {
-    fetch(new Request('/smt', {
+document.getElementById('smt').onclick = async e => {
+    const res = await fetch(new Request('/smt', {
         method: 'GET',
-    })).then(res => res.text().then(text => {
-        document.querySelector("#smt-model").value = text
-    }))
+    }));
+    document.querySelector("#smt-model").value = await res.text()
 }
 
 </script>
