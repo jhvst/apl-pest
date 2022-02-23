@@ -70,21 +70,111 @@
 
 </header>
 
-<div id="ide">
+<fieldset>
+    <legend>APL</legend>
+    <div id="ide">
 
-    <div contenteditable="true" id="i" autocorrect="off" spellcheck="false"></div>
-    <div id="stdout"></div>
+        <div contenteditable="true" id="i" autocorrect="off" spellcheck="false"></div>
+        <div id="stdout"></div>
 
-</div>
+    </div>
 
-<button id="vk">Vulkan</button>
-<textarea id="vk-info"></textarea>
+</fieldset>
 
-<div id="model">
-    <button id="smt">SMT</button>
-    <textarea id="smt-model"></textarea>
-    <textarea id="smt-param"></textarea>
-</div>
+
+<fieldset>
+    <legend>Vulkan [<button id="vk">connect</button>]</legend>
+
+
+    <fieldset>
+
+        <legend>Apple M1</legend>
+
+        <div>
+            <label for="scales">Queue Family 1</label>
+            <input type="checkbox" id="scales" name="scales" checked>
+
+            <label for="queues">Queues</label>
+            <input name="queues" list="tickmarks" type="range" min="1" max="4" value="4"/>
+            <datalist id="tickmarks">
+                <option value="1"></option>
+                <option value="2"></option>
+                <option value="3"></option>
+                <option value="4"></option>
+            </datalist>
+        </div>
+        <div>
+            <label for="scales">Queue Family 2</label>
+            <input type="checkbox" id="scales" name="scales" checked>
+
+            <label for="queues">Queues</label>
+            <input name="queues" list="tickmarks" type="range" min="1" max="4" value="4"/>
+            <datalist id="tickmarks">
+                <option value="1"></option>
+                <option value="2"></option>
+                <option value="3"></option>
+                <option value="4"></option>
+            </datalist>
+        </div>
+        <div>
+            <label for="scales">Queue Family 3</label>
+            <input type="checkbox" id="scales" name="scales" checked>
+
+            <label for="queues">Queues</label>
+            <input name="queues" list="tickmarks" type="range" min="1" max="4" value="4"/>
+            <datalist id="tickmarks">
+                <option value="1"></option>
+                <option value="2"></option>
+                <option value="3"></option>
+                <option value="4"></option>
+            </datalist>
+        </div>
+        <div>
+            <label for="scales">Queue Family 4</label>
+            <input type="checkbox" id="scales" name="scales" checked>
+
+            <label for="queues">Queues</label>
+            <input name="queues" list="tickmarks" type="range" min="1" max="4" value="4"/>
+            <datalist id="tickmarks">
+                <option value="1"></option>
+                <option value="2"></option>
+                <option value="3"></option>
+                <option value="4"></option>
+            </datalist>
+        </div>
+
+    </fieldset>
+
+    <p>Active queues: <span>0</span></p>
+    <p>GPU count: <span>0</span></p>
+
+    <details>
+        <summary>debug</summary>
+        <textarea disabled id="vk-info"></textarea>
+    </details>
+
+</fieldset>
+
+<fieldset>
+    <legend>SMT [<button id="smt">solve</button>]</legend>
+
+    <fieldset>
+
+        <legend>Phase 0</legend>
+        <p>Idris interpretation: <span>0</span></p>
+        <p>Input size: <span>0</span></p>
+        <p>Result shape: <span>0</span></p>
+        <p>Required memory: <span>0</span></p>
+
+    </fieldset>
+
+    <details>
+        <summary>debug</summary>
+        <textarea id="smt-model"></textarea>
+        <textarea id="smt-param"></textarea>
+    </details>
+
+</fieldset>
 
 <script>
 
