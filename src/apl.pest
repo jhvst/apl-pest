@@ -2,11 +2,13 @@ WHITESPACE = _{ " " }
 
 Nat = { '0'..'9' }
 
-Phase = { Reduce | Sum }
+Phase = { Reduce | Sum | IndexGenerator }
 
 Sum = { SomeVect ~ "+" ~ Phase }
-Reduce = { "+/" ~ SomeVect }
+Reduce = { "+/" ~ (SomeVect | Phase) }
+IndexGenerator = { "⍳" ~ SomeScalar }
 
 SomeVect = { Nat+ }
+SomeScalar = { '0'..'9'+ }
 
 Main = { Phase? }

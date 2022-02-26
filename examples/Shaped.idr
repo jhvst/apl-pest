@@ -39,6 +39,7 @@ data Operation =
   Plus | Minus
   | Slash | Backslash
   | Equal
+  | Iota
 
 data Parallelism: Nat -> Nat -> Type where
   mkPar: (x: Nat) -> (y: Nat) -> Parallelism x y
@@ -57,6 +58,10 @@ Reduce : Shape q (MkDim (S r) (S n)) -> Phase
 Reduce {q=FZ} o = MkPhase Slash o (mkPar 0 0)
 Reduce {q=FS(FZ)} {n} o = MkPhase Slash SomeScalar (mkPar (S n) 0)
 Reduce {q=FS(FS(FZ))} {r} {n} o = MkPhase Slash (SomeVect (S n)) (mkPar ((S n)*(S r)) 0)
+
+-- shape (IndexGenerator 4)
+IndexGenerator : (len: Nat) -> Phase
+IndexGenerator len = MkPhase Iota (SomeVect (S len)) (mkPar 0 0)
 
 Sum : Shape p (MkDim (S r) (S n)) -> Shape p (MkDim (S r) (S n)) -> Phase
 Sum {r} {n} a o = MkPhase Plus o (mkPar 0 ((S n)*(S r)))

@@ -50,6 +50,12 @@
         flex-direction: column;
     }
 
+    .smt-phase {
+        display: grid;
+        grid-template-columns: repeat(1, 1fr);
+        grid-template-rows: repeat(1, 1fr);
+    }
+
 </style>
 
 <header>
@@ -70,83 +76,12 @@
 
 </header>
 
-<fieldset>
-    <legend>APL</legend>
-    <div id="ide">
-
-        <div contenteditable="true" id="i" autocorrect="off" spellcheck="false"></div>
-        <div id="stdout"></div>
-
-    </div>
-
-</fieldset>
-
-
-<fieldset>
+<fieldset class="vk">
     <legend>Vulkan [<button id="vk">connect</button>]</legend>
 
-
-    <fieldset>
-
-        <legend>Apple M1</legend>
-
-        <div>
-            <label for="scales">Queue Family 1</label>
-            <input type="checkbox" id="scales" name="scales" checked>
-
-            <label for="queues">Queues</label>
-            <input name="queues" list="tickmarks" type="range" min="1" max="4" value="4"/>
-            <datalist id="tickmarks">
-                <option value="1"></option>
-                <option value="2"></option>
-                <option value="3"></option>
-                <option value="4"></option>
-            </datalist>
-        </div>
-        <div>
-            <label for="scales">Queue Family 2</label>
-            <input type="checkbox" id="scales" name="scales" checked>
-
-            <label for="queues">Queues</label>
-            <input name="queues" list="tickmarks" type="range" min="1" max="4" value="4"/>
-            <datalist id="tickmarks">
-                <option value="1"></option>
-                <option value="2"></option>
-                <option value="3"></option>
-                <option value="4"></option>
-            </datalist>
-        </div>
-        <div>
-            <label for="scales">Queue Family 3</label>
-            <input type="checkbox" id="scales" name="scales" checked>
-
-            <label for="queues">Queues</label>
-            <input name="queues" list="tickmarks" type="range" min="1" max="4" value="4"/>
-            <datalist id="tickmarks">
-                <option value="1"></option>
-                <option value="2"></option>
-                <option value="3"></option>
-                <option value="4"></option>
-            </datalist>
-        </div>
-        <div>
-            <label for="scales">Queue Family 4</label>
-            <input type="checkbox" id="scales" name="scales" checked>
-
-            <label for="queues">Queues</label>
-            <input name="queues" list="tickmarks" type="range" min="1" max="4" value="4"/>
-            <datalist id="tickmarks">
-                <option value="1"></option>
-                <option value="2"></option>
-                <option value="3"></option>
-                <option value="4"></option>
-            </datalist>
-        </div>
-
-    </fieldset>
-
-    <p>Active queues: <span>0</span></p>
-    <p>GPU count: <span>0</span></p>
+    <p>Active queues: <span id="active-queues">0</span></p>
+    <p>GPU count: <span id="gpu-count">0</span></p>
+    <p>f32 size: <span id="f32-size">0</span></p>
 
     <details>
         <summary>debug</summary>
@@ -156,17 +91,23 @@
 </fieldset>
 
 <fieldset>
+    <legend>APL</legend>
+    <div id="ide">
+
+        <div contenteditable="true" id="i" autocorrect="off" spellcheck="false"></div>
+        <div id="stdout"></div>
+
+    </div>
+
+    <details>
+        <summary>debug</summary>
+        <textarea disabled id="apl-info"></textarea>
+    </details>
+
+</fieldset>
+
+<fieldset class="smt">
     <legend>SMT [<button id="smt">solve</button>]</legend>
-
-    <fieldset>
-
-        <legend>Phase 0</legend>
-        <p>Idris interpretation: <span>0</span></p>
-        <p>Input size: <span>0</span></p>
-        <p>Result shape: <span>0</span></p>
-        <p>Required memory: <span>0</span></p>
-
-    </fieldset>
 
     <details>
         <summary>debug</summary>
@@ -175,6 +116,8 @@
     </details>
 
 </fieldset>
+
+<button disabled>Compute</button>
 
 <script>
 
@@ -212,19 +155,149 @@ const observer = new MutationObserver((mutations, observer) => {
             method: 'POST',
             body: formData
         }))
-        const text = await res.text()
+        const text = await res.json()
+
         console.log(text);
 
-        let lines = text.split("\n");
-        let interpretation = lines[0];
-        let shape = lines[1];
-        let input = lines[2];
-        print("interpretation: " + interpretation);
-        print("resulting shape: " + shape);
+        document.querySelector("#apl-info").value = JSON.stringify(text);
+        createPhase(text);
 
     })
     observer.disconnect()
 });
+
+const toJson = (text) => {
+    let res = {};
+    text.trim().split("\n").map((line) => {
+        let substr = line.split(":");
+        let key = substr[0].trim();
+        let val = substr[1].trim();
+        let obj = {};
+        obj[key] = val;
+        return obj
+    }).forEach((obj) => Object.assign(res, obj))
+    return res;
+}
+
+const createPhase = (data) => {
+
+    data.phases.forEach((v, i) => {
+
+        let fieldset = document.createElement("fieldset");
+        fieldset.className = "smt-phase";
+
+        let legend = document.createElement("legend");
+        legend.textContent = `Phase ${v.idx}`;
+        fieldset.appendChild(legend);
+
+        let int_label = document.createElement("label");
+        int_label.textContent = "Idris interpretation:";
+        int_label.htmlFor = "int";
+        fieldset.appendChild(int_label);
+
+        let int = document.createElement("input");
+        int.disabled = true;
+        int.name = "int";
+        int.value = v.input;
+        fieldset.appendChild(int);
+
+
+        let input_size_label = document.createElement("label");
+        input_size_label.textContent = "Input size:";
+        input_size_label.htmlFor = "size";
+        fieldset.appendChild(input_size_label);
+
+        let input_size = document.createElement("input");
+        input_size.disabled = true;
+        input_size.name = "size";
+        input_size.value = v.size;
+        fieldset.appendChild(input_size);
+
+
+        let shape_label = document.createElement("label");
+        shape_label.textContent = "Result shape:";
+        shape_label.htmlFor = "shape";
+        fieldset.appendChild(shape_label);
+
+        let shape = document.createElement("input");
+        shape.disabled = true;
+        shape.name = "shape";
+        shape.value = v.output;
+        fieldset.appendChild(shape);
+
+
+        let mem_label = document.createElement("label");
+        mem_label.textContent = "Required memory:";
+        mem_label.htmlFor = "mem";
+        fieldset.appendChild(mem_label);
+
+        let mem = document.createElement("input");
+        mem.disabled = true;
+        mem.htmlFor = "mem";
+        mem.value = +v.size * (+document.querySelector("#f32-size").textContent);
+        fieldset.appendChild(mem);
+
+
+        document.querySelector("fieldset.smt legend").after(fieldset)
+
+    });
+
+}
+
+const createDevice = (data) => {
+    let fieldset = document.createElement("fieldset");
+
+    let legend = document.createElement("legend");
+    legend.textContent = data.name;
+    fieldset.appendChild(legend);
+
+    Array.from({length: data.queue_size}, (_, i) => {
+        let container = document.createElement("div");
+
+        let qf_label = document.createElement("label");
+        qf_label.textContent = `Queue Family ${i}`;
+        qf_label.htmlFor = "scales";
+        container.appendChild(qf_label);
+
+        let qf_checkbox = document.createElement("input");
+        qf_checkbox.type = "checkbox";
+        qf_checkbox.checked = true;
+        qf_checkbox.name = "scales";
+        container.appendChild(qf_checkbox);
+
+        let qs_label = document.createElement("label");
+        qs_label.textContent = "Queues";
+        qs_label.htmlFor = "queue";
+        container.appendChild(qs_label);
+
+        let qs_range = document.createElement("input");
+        qs_range.type = "range";
+        qs_range.setAttribute("list", "tickmarks");
+        qs_range.name = "queue";
+        container.appendChild(qs_range);
+
+        let datalist = document.createElement("datalist");
+        datalist.id = "tickmarks";
+        container.appendChild(datalist);
+
+        let searchTerm = `"${i} `;
+        let start = data.queues.indexOf(searchTerm);
+        let queue_length = +data.queues.at(start + searchTerm.length);
+        let options = Array.from({length: queue_length}, (_, ii) => {
+            let option = document.createElement("option");
+            option.value = +ii + 1;
+            datalist.appendChild(option);
+            return option;
+        });
+        qs_range.min = 1;
+        qs_range.value = queue_length;
+        qs_range.max = queue_length;
+
+        fieldset.appendChild(container);
+    });
+
+    return fieldset;
+}
 
 document.getElementById('vk').onclick = async e => {
     const res = await fetch(new Request('/vk', {
@@ -232,9 +305,14 @@ document.getElementById('vk').onclick = async e => {
     }));
     const text = await res.text();
     document.querySelector("#vk-info").value = text;
-    let lines = text.split("\n");
-    let cores = lines[0];
-    let queues = lines[4];
+
+    const vk = toJson(text);
+    const device = createDevice(vk);
+    document.querySelector("fieldset.vk legend").after(device);
+
+    document.querySelector("#active-queues").textContent = vk.queue_size;
+    document.querySelector("#gpu-count").textContent = vk.gpu_device_count;
+    document.querySelector("#f32-size").textContent = vk.f32_size;
 
     document.querySelector("#smt-param").value = `
 letting ${cores}
