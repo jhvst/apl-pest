@@ -7,10 +7,86 @@ extern crate pest_derive;
 use std::error::Error;
 
 use pest::Parser;
+use rivi_loader::DebugOption;
+use serde::{Serialize, Deserialize};
 
 #[derive(Parser)]
 #[grammar = "apl.pest"]
 struct IdentParser;
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Phase {
+    pub idx: usize,
+    pub input: String,
+    pub output: String,
+    pub size: usize,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Phases {
+    pub phases: Vec<Phase>,
+}
+
+pub fn vk_compute(phases: Phases, input: &str) -> Vec<f32> {
+
+    let numspace = input
+        .chars()
+        .filter(|c| c.is_numeric())
+        .map(|c| c.to_string().parse::<f32>().unwrap() )
+        .collect::<Vec<_>>();
+
+    println!("{:?}", numspace);
+
+    let results = phases
+        .phases
+        .iter()
+        .enumerate()
+        .map(|(idx, phase)| {
+            let cmd = phase.input.strip_prefix("shape (").unwrap();
+            let op = cmd.split(' ').next().unwrap();
+
+            println!("{} {:?} ", idx, phase);
+
+            match op {
+                "Reduce" => {
+                    let a = numspace.clone();
+                    let a2 = &vec![vec![a]];
+                    let mut output = vec![0.0f32; phase.size];
+
+                    let vk = rivi_loader::new(DebugOption::None).unwrap();
+
+                    let mut cursor = std::io::Cursor::new(&include_bytes!("./spirv/reduce.spv")[..]);
+                    let shader = vk.load_shader(&mut cursor).unwrap();
+
+                    vk.compute(a2, &mut output, &shader).unwrap();
+
+                    output
+                },
+                "IndexGenerator" => {
+
+                    let numstr = numspace.clone().iter().map(|v| {
+                        format!("{}", v)
+                    }).collect::<String>().parse::<f32>().unwrap();
+
+                    let a = vec![numstr];
+                    let input = &vec![vec![a]];
+                    let mut output = vec![0.0f32; numstr as usize];
+
+                    let vk = rivi_loader::new(DebugOption::None).unwrap();
+
+                    let mut cursor = std::io::Cursor::new(&include_bytes!("./spirv/indexgen.spv")[..]);
+                    let shader = vk.load_shader(&mut cursor).unwrap();
+
+                    vk.compute(input, &mut output, &shader).unwrap();
+
+                    output
+                }
+                _ => unimplemented!("foo"),
+            }
+    }).collect::<Vec<_>>();
+
+    results.iter().last().unwrap().to_owned()
+}
 
 pub fn phases(s: &str) -> Vec<String> {
     let mut phases = s.split("shape ")

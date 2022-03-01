@@ -1,9 +1,20 @@
 use std::{process::Command, str::from_utf8, io::Read};
 
 use salvo::{prelude::*, extra::serve::StaticFile};
-use apl_pest::{parse, phases};
+use apl_pest::{parse, phases, vk_compute};
+use apl_pest::{Phase, Phases};
 use rivi_loader::DebugOption;
-use serde::{Serialize, Deserialize};
+
+#[fn_handler]
+async fn compute(req: &mut Request, res: &mut Response) {
+    let form = req.form_data().await.unwrap();
+    let phases = form.fields.get("phases").unwrap().trim();
+    let input = form.fields.get("input").unwrap().trim();
+    let vk: crate::Phases = serde_json::from_str(phases).unwrap();
+    println!("{}, {}", phases, input);
+    let result = vk_compute(vk, input);
+    res.render_plain_text(&format!("{:?}", result));
+}
 
 #[fn_handler]
 async fn caps(_req: &mut Request, res: &mut Response) {
@@ -38,31 +49,11 @@ async fn solve(req: &mut Request, res: &mut Response) {
     res.render_plain_text(&from_utf8(&idris.stdout).unwrap().trim());
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct Phase {
-    idx: usize,
-    input: String,
-    output: String,
-    size: usize,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct Phases {
-    phases: Vec<Phase>,
-}
-
 #[fn_handler]
 async fn hello_world(req: &mut Request, res: &mut Response) {
     let form = req.form_data().await.unwrap();
     let input = form.fields.get("input").unwrap().trim();
     let idris_fmt = parse(input).unwrap();
-
-    let idris = Command::new("idris")
-        .arg(format!("{}/examples/Shaped.idr", env!("CARGO_MANIFEST_DIR")))
-        .arg("-e")
-        .arg(&idris_fmt)
-        .output()
-        .expect("failed to execute idris");
 
     let phases = phases(&idris_fmt)
         .iter()
@@ -111,6 +102,7 @@ async fn main() {
         .post(hello_world)
     .push(Router::with_path("vk")
         .get(caps)
+        .post(compute)
     )
     .push(Router::with_path("smt")
         .get(savilerow)

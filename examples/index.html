@@ -34,20 +34,8 @@
         min-height: 3em;
     }
 
-    #stdout {
-        background-color: black;
-        color: white;
-        max-height: 50vh;
-        overflow-y: scroll;
-    }
-
     #i:focus {
         outline: none;
-    }
-
-    form {
-        display: flex;
-        flex-direction: column;
     }
 
     .smt-phase {
@@ -58,9 +46,25 @@
 
 </style>
 
-<header>
+<form id="rivi" onsubmit="compute(event); return false">
 
-    <div>
+    <fieldset class="vk" name="vk">
+        <legend>Vulkan [<button id="vk">connect</button>]</legend>
+
+        <p>Active queues: <span id="active-queues">0</span></p>
+        <p>GPU count: <span id="gpu-count">0</span></p>
+        <p>f32 size: <span id="f32-size">0</span></p>
+
+        <details>
+            <summary>debug</summary>
+            <textarea disabled id="vk-info"></textarea>
+        </details>
+
+    </fieldset>
+
+    <fieldset name="apl">
+        <legend>APL</legend>
+
         <div>
             <a href="https://aplcart.info/">aplcart</a>
             <a href="https://www.dyalog.com/uploads/documents/MasteringDyalogAPL.pdf">mastering</a>
@@ -72,61 +76,58 @@
             <span>Monadic: ⍒ ⍳ +/</span></br>
             <span>Dyadic: </span>
         </div>
-    </div>
 
-</header>
+        <div id="ide">
+            <div contenteditable="true" id="i" autocorrect="off" spellcheck="false"></div>
+        </div>
 
-<fieldset class="vk">
-    <legend>Vulkan [<button id="vk">connect</button>]</legend>
+        <details>
+            <summary>debug</summary>
+            <textarea disabled id="apl-info"></textarea>
+        </details>
 
-    <p>Active queues: <span id="active-queues">0</span></p>
-    <p>GPU count: <span id="gpu-count">0</span></p>
-    <p>f32 size: <span id="f32-size">0</span></p>
+    </fieldset>
 
-    <details>
-        <summary>debug</summary>
-        <textarea disabled id="vk-info"></textarea>
-    </details>
+    <fieldset class="smt" name="smt">
+        <legend>SMT [<button id="smt">solve</button>]</legend>
 
-</fieldset>
+        <details>
+            <summary>debug</summary>
+            <textarea id="smt-model"></textarea>
+            <textarea id="smt-param"></textarea>
+        </details>
 
-<fieldset>
-    <legend>APL</legend>
-    <div id="ide">
+    </fieldset>
 
-        <div contenteditable="true" id="i" autocorrect="off" spellcheck="false"></div>
-        <div id="stdout"></div>
+    <fieldset>
+        <legend>Rust+Idris+APL+Essence</legend>
 
-    </div>
+        <label>Output:</label>
+        <input disabled id="output"></input>
 
-    <details>
-        <summary>debug</summary>
-        <textarea disabled id="apl-info"></textarea>
-    </details>
+        <details>
+            <summary>debug</summary>
+            <textarea id="smt-model"></textarea>
+            <textarea id="smt-param"></textarea>
+        </details>
 
-</fieldset>
+    </fieldset>
 
-<fieldset class="smt">
-    <legend>SMT [<button id="smt">solve</button>]</legend>
-
-    <details>
-        <summary>debug</summary>
-        <textarea id="smt-model"></textarea>
-        <textarea id="smt-param"></textarea>
-    </details>
-
-</fieldset>
-
-<button disabled>Compute</button>
+</form>
 
 <script>
 
-print = data => {
-    let container = document.createElement("p")
-    let msg = document.createTextNode(data)
-    container.appendChild(msg)
-    document.getElementById('stdout').prepend(container)
-}
+const compute = async (e) => {
+    let formData = new FormData(e.target)
+    formData.append("phases", document.getElementById("apl-info").value);
+    formData.append("input", document.getElementById("i").textContent);
+    const res = await fetch(new Request('/vk', {
+        method: 'POST',
+        body: formData
+    }))
+    const text = await res.text()
+    document.querySelector("#output").value = text;
+};
 
 const targetNode = document.getElementById('i');
 
@@ -156,8 +157,6 @@ const observer = new MutationObserver((mutations, observer) => {
             body: formData
         }))
         const text = await res.json()
-
-        console.log(text);
 
         document.querySelector("#apl-info").value = JSON.stringify(text);
         createPhase(text);
@@ -192,49 +191,45 @@ const createPhase = (data) => {
 
         let int_label = document.createElement("label");
         int_label.textContent = "Idris interpretation:";
-        int_label.htmlFor = "int";
         fieldset.appendChild(int_label);
 
         let int = document.createElement("input");
         int.disabled = true;
-        int.name = "int";
         int.value = v.input;
+        int.name = `phase-${v.idx}-interpretation`;
         fieldset.appendChild(int);
 
 
         let input_size_label = document.createElement("label");
         input_size_label.textContent = "Input size:";
-        input_size_label.htmlFor = "size";
         fieldset.appendChild(input_size_label);
 
         let input_size = document.createElement("input");
         input_size.disabled = true;
-        input_size.name = "size";
         input_size.value = v.size;
+        input_size.name = `phase-${v.idx}-size`;
         fieldset.appendChild(input_size);
 
 
         let shape_label = document.createElement("label");
         shape_label.textContent = "Result shape:";
-        shape_label.htmlFor = "shape";
         fieldset.appendChild(shape_label);
 
         let shape = document.createElement("input");
         shape.disabled = true;
-        shape.name = "shape";
         shape.value = v.output;
+        shape.name = `phase-${v.idx}-shape`;
         fieldset.appendChild(shape);
 
 
         let mem_label = document.createElement("label");
         mem_label.textContent = "Required memory:";
-        mem_label.htmlFor = "mem";
         fieldset.appendChild(mem_label);
 
         let mem = document.createElement("input");
         mem.disabled = true;
-        mem.htmlFor = "mem";
         mem.value = +v.size * (+document.querySelector("#f32-size").textContent);
+        mem.name = `phase-${v.idx}-mem`;
         fieldset.appendChild(mem);
 
 
@@ -262,7 +257,7 @@ const createDevice = (data) => {
         let qf_checkbox = document.createElement("input");
         qf_checkbox.type = "checkbox";
         qf_checkbox.checked = true;
-        qf_checkbox.name = "scales";
+        qf_checkbox.name = `scales-${i}`;
         container.appendChild(qf_checkbox);
 
         let qs_label = document.createElement("label");
@@ -273,7 +268,7 @@ const createDevice = (data) => {
         let qs_range = document.createElement("input");
         qs_range.type = "range";
         qs_range.setAttribute("list", "tickmarks");
-        qs_range.name = "queue";
+        qs_range.name = `queue-${i}`;
         container.appendChild(qs_range);
 
         let datalist = document.createElement("datalist");
@@ -283,7 +278,7 @@ const createDevice = (data) => {
         let searchTerm = `"${i} `;
         let start = data.queues.indexOf(searchTerm);
         let queue_length = +data.queues.at(start + searchTerm.length);
-        let options = Array.from({length: queue_length}, (_, ii) => {
+        Array.from({length: queue_length}, (_, ii) => {
             let option = document.createElement("option");
             option.value = +ii + 1;
             datalist.appendChild(option);
@@ -292,6 +287,7 @@ const createDevice = (data) => {
         qs_range.min = 1;
         qs_range.value = queue_length;
         qs_range.max = queue_length;
+        qs_range.name = `range-${i}`;
 
         fieldset.appendChild(container);
     });
@@ -318,13 +314,6 @@ document.getElementById('vk').onclick = async e => {
 letting ${cores}
 letting ${queues}
 letting {2}`
-}
-
-document.getElementById('smt').onclick = async e => {
-    const res = await fetch(new Request('/smt', {
-        method: 'GET',
-    }));
-    document.querySelector("#smt-model").value = await res.text()
 }
 
 </script>
